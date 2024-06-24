@@ -16,7 +16,7 @@ Whitespace and bar in name:
 
 <div class="transclusion internal-embed is-loaded"><div class="markdown-embed">
 
-$<div class="markdown-embed-title">
+<div class="markdown-embed-title">
 
 # whitespace.
 
@@ -32,7 +32,7 @@ Random hashes in transclusion title:
 
 <div class="transclusion internal-embed is-loaded"><div class="markdown-embed">
 
-$<div class="markdown-embed-title">
+<div class="markdown-embed-title">
 
 ## ## i think i fixed this one ## earlier #lol
 
@@ -69,27 +69,17 @@ Cheese
 
 
 
-This is a header transclusion that is slightly wrong in a way that obsidian fixes it but DG doesn't #known-issue
+This is a header transclusion that is slightly that uses a special character in the header
 
 
 <div class="transclusion internal-embed is-loaded"><div class="markdown-embed">
 
 
 
-
-
-This is above the header
 ## Header
 
 This should be in this header block
 
-## Another header
-
-This shouldn't be under a header transclusion
-
-
-
-Cheese 
 
 </div></div>
 
@@ -232,7 +222,8 @@ This file should have createdAt: 2020-01-01
 {"dg-publish":true,"permalink":"/011-custom-updated-at/","updated":"2021-01-01"}
 ---
 
-This file should have createdAt: 2021-01-01
+This file should have updatedAt: 2021-01-01
+
 ==========
 012 Callouts.md
 ==========
@@ -337,6 +328,71 @@ this is just text i guess
 
 
 ==========
+013 Custom path.md
+==========
+---
+{"dg-publish":true,"dg-path":"custom path/should also write to permalink","permalink":"/custom-path/should-also-write-to-permalink/"}
+---
+
+
+==========
+014 Customer path and permalink.md
+==========
+---
+{"dg-publish":true,"dg-path":"custom path/should not overwrite permalink","dg-permalink":"custom link/shouldBeDifferentToPath","permalink":"/custom link/shouldBeDifferentToPath/"}
+---
+
+
+==========
+015 Code blocks.md
+==========
+---
+{"dg-publish":true,"permalink":"/015-code-blocks/"}
+---
+
+These codeblocks should not be modified upon publish.
+
+Sample 1
+```jinja2
+{{ highlight_text }}{% if highlight_location and highlight_location_url %} ([via]({{highlight_location_url}})){% elif highlight_location %} ({{highlight_location}}){% endif %} ^rwhi{{highlight_id}}
+{% if highlight_note %}
+{{ highlight_note }} ^rwhi{{highlight_id}}-note
+{% endif %}
+```
+
+Sample 2
+```md
+In medieval Latin a florilegium (plural florilegia) was a compilation of excerpts from other writings.
+ The word is from the Latin flos (flower) and legere (to gather): literally a gathering of flowers, or collection of fine extracts from the body of a larger work. ([via](https://en.wikipedia.org/wiki/Florilegium)) ^rwhi724352030
+```
+
+Sample 3
+```
+This codeblock has a transclusion syntax in it.
+Check it out: 
+<div class="transclusion internal-embed is-loaded"><a class="markdown-embed-link" href="/001-links/" aria-label="Open link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a><div class="markdown-embed">
+
+
+
+
+[[002 Hidden page]]
+
+[[003 Non published page]]
+
+[[000 Home| Aliased link to home]]
+
+[[000 Home | Link containing whitespace which works in obsidian but doesn't in garden :) - yes, this could be a ticket but lo and behold]]
+
+
+
+</div></div>
+
+```
+
+And for sanity, here's some block references outside of code blocks: foobar
+{ #test-123}
+
+==========
 E Embeds/E02 PNG published.md
 ==========
 ---
@@ -410,7 +466,7 @@ How deep can you go?
 
 <div class="transclusion internal-embed is-loaded"><div class="markdown-embed">
 
-$<div class="markdown-embed-title">
+<div class="markdown-embed-title">
 
 # Spice it up
 
@@ -612,6 +668,31 @@ this plugin has custom filter that turns 🌞 (snow emoji) into 🌞 (THE SUN). 
 ,/img/user/A Assets/unused_image.png
 ,/img/user/A Assets/travolta.webp
 ==========
+L Languages/Transclude Headers.md
+==========
+---
+{"dg-publish":true,"permalink":"/l-languages/transclude-headers/"}
+---
+
+
+
+<div class="transclusion internal-embed is-loaded"><div class="markdown-embed">
+
+
+
+#  解决
+
+This should be visible when transcluding the header above
+
+
+
+</div></div>
+
+
+/img/user/A Assets/travolta.png
+,/img/user/A Assets/unused_image.png
+,/img/user/A Assets/travolta.webp
+==========
 L Links/01 Link to header.md
 ==========
 ---
@@ -620,6 +701,19 @@ L Links/01 Link to header.md
 
 Link to header should keep header link info
 [[000 Home#Welcome\|000 Home#Welcome]]
+
+Link to header with special characters should work
+
+<div class="transclusion internal-embed is-loaded"><div class="markdown-embed">
+
+
+
+# A header: With a colon
+Body under header
+
+
+</div></div>
+
 /img/user/A Assets/travolta.png
 ,/img/user/A Assets/unused_image.png
 ,/img/user/A Assets/travolta.webp
@@ -670,7 +764,7 @@ P Plugins/PD Dataview/PD3 Inline JS queries.md
 
 
 3
-96
+108
 <p><span>A paragraph</span></p>
 
 /img/user/A Assets/travolta.png
@@ -685,7 +779,7 @@ P Plugins/PD Dataview/PD4 DataviewJs queries.md
 
 <h2><span>Header 2</span></h2><p><span>PD4 DataviewJs queries</span></p>
 
-<div><table class="dataview table-view-table"><thead class="table-view-thead"><tr class="table-view-tr-header"><th class="table-view-th"><span>name</span><span class="dataview small-text">4</span></th><th class="table-view-th"><span>link</span></th></tr></thead><tbody class="table-view-tbody"><tr><td><span>005 Custom filters</span></td><td><span><a data-tooltip-position="top" aria-label="005 Custom filters.md" data-href="005 Custom filters.md" href="005 Custom filters.md" class="internal-link" target="_blank" rel="noopener">005 Custom filters</a></span></td></tr><tr><td><span>006 Custom title</span></td><td><span><a data-tooltip-position="top" aria-label="006 Custom title.md" data-href="006 Custom title.md" href="006 Custom title.md" class="internal-link" target="_blank" rel="noopener">006 Custom title</a></span></td></tr><tr><td><span>007 Custom permalink</span></td><td><span><a data-tooltip-position="top" aria-label="007 Custom permalink.md" data-href="007 Custom permalink.md" href="007 Custom permalink.md" class="internal-link" target="_blank" rel="noopener">007 Custom permalink</a></span></td></tr><tr><td><span>011 Custom updatedAt</span></td><td><span><a data-tooltip-position="top" aria-label="011 Custom updatedAt.md" data-href="011 Custom updatedAt.md" href="011 Custom updatedAt.md" class="internal-link" target="_blank" rel="noopener">011 Custom updatedAt</a></span></td></tr></tbody></table></div>
+<div><table class="dataview table-view-table"><thead class="table-view-thead"><tr class="table-view-tr-header"><th class="table-view-th"><span>name</span><span class="dataview small-text">6</span></th><th class="table-view-th"><span>link</span></th></tr></thead><tbody class="table-view-tbody"><tr><td><span>005 Custom filters</span></td><td><span><a data-tooltip-position="top" aria-label="005 Custom filters.md" data-href="005 Custom filters.md" href="005 Custom filters.md" class="internal-link" target="_blank" rel="noopener">005 Custom filters</a></span></td></tr><tr><td><span>006 Custom title</span></td><td><span><a data-tooltip-position="top" aria-label="006 Custom title.md" data-href="006 Custom title.md" href="006 Custom title.md" class="internal-link" target="_blank" rel="noopener">006 Custom title</a></span></td></tr><tr><td><span>007 Custom permalink</span></td><td><span><a data-tooltip-position="top" aria-label="007 Custom permalink.md" data-href="007 Custom permalink.md" href="007 Custom permalink.md" class="internal-link" target="_blank" rel="noopener">007 Custom permalink</a></span></td></tr><tr><td><span>011 Custom updatedAt</span></td><td><span><a data-tooltip-position="top" aria-label="011 Custom updatedAt.md" data-href="011 Custom updatedAt.md" href="011 Custom updatedAt.md" class="internal-link" target="_blank" rel="noopener">011 Custom updatedAt</a></span></td></tr><tr><td><span>013 Custom path</span></td><td><span><a data-tooltip-position="top" aria-label="013 Custom path.md" data-href="013 Custom path.md" href="013 Custom path.md" class="internal-link" target="_blank" rel="noopener">013 Custom path</a></span></td></tr><tr><td><span>014 Customer path and permalink</span></td><td><span><a data-tooltip-position="top" aria-label="014 Customer path and permalink.md" data-href="014 Customer path and permalink.md" href="014 Customer path and permalink.md" class="internal-link" target="_blank" rel="noopener">014 Customer path and permalink</a></span></td></tr></tbody></table></div>
 
 
 /img/user/A Assets/travolta.png

@@ -30,6 +30,7 @@ import {
 import Logger from "js-logger";
 import { DataviewCompiler } from "./DataviewCompiler";
 import { PublishFile } from "../publishFile/PublishFile";
+import { replaceBlockIDs } from "./replaceBlockIDs";
 
 export interface Asset {
 	path: string;
@@ -144,21 +145,7 @@ export class GardenPageCompiler {
 	};
 
 	createBlockIDs: TCompilerStep = () => (text: string) => {
-		const block_pattern = / \^([\w\d-]+)/g;
-		const complex_block_pattern = /\n\^([\w\d-]+)\n/g;
-
-		text = text.replace(
-			complex_block_pattern,
-			(_match: string, $1: string) => {
-				return `{ #${$1}}\n\n`;
-			},
-		);
-
-		text = text.replace(block_pattern, (match: string, $1: string) => {
-			return `\n{ #${$1}}\n`;
-		});
-
-		return text;
+		return replaceBlockIDs(text);
 	};
 
 	removeObsidianComments: TCompilerStep = () => (text) => {
@@ -379,8 +366,13 @@ export class GardenPageCompiler {
 							const refHeader =
 								transclusionFileName.split("#")[1];
 
+							// This is to mitigate the issue where the header matching doesn't work properly with headers with special characters (e.g. :)
+							// Obsidian's autocomplete for transclusion omits such charcters which leads to full page transclusion instead of just the heading
+							const headerSlug = slugify(refHeader);
+
 							const headerInFile = metadata?.headings?.find(
-								(header) => header.heading === refHeader,
+								(header) =>
+									slugify(header.heading) === headerSlug,
 							);
 
 							sectionID = `#${slugify(refHeader)}`;
@@ -434,7 +426,7 @@ export class GardenPageCompiler {
 						);
 
 						const headerSection = header
-							? `$<div class="markdown-embed-title">\n\n${header}\n\n</div>\n`
+							? `<div class="markdown-embed-title">\n\n${header}\n\n</div>\n`
 							: "";
 						let embedded_link = "";
 

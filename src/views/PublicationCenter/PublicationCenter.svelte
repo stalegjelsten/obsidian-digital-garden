@@ -184,45 +184,29 @@
 
 		showPublishingView = true;
 
-		for (const note of changedToPublish.concat(unpublishedToPublish)) {
-			processingPaths.push(note.getPath());
-			let isPublished = await publisher.publish(note);
+		const allNotesToPublish = unpublishedToPublish.concat(changedToPublish);
 
-			processingPaths = processingPaths.filter(
-				(path) => path !== note.getPath(),
-			);
+		processingPaths = [...allNotesToPublish.map((note) => note.getPath())];
+		await publisher.publishBatch(allNotesToPublish);
 
-			if (isPublished) {
-				publishedPaths = [...publishedPaths, note.getPath()];
-			} else {
-				failedPublish = [...failedPublish, note.getPath()];
-			}
-		}
+		publishedPaths = [...processingPaths];
+		processingPaths = [];
 
-		for (const path of [...notesToDelete, ...imagesToDelete]) {
-			processingPaths.push(path);
-			const isNote = path.endsWith(".md");
-			let isDeleted: boolean;
-
-			if (isNote) {
-				const sha = publishStatus.deletedNotePaths.find(
-					(p) => p.path === path,
-				)?.sha;
-
-				isDeleted = await publisher.deleteNote(path, sha);
-			} else {
-				// TODO: remove with sha
-				isDeleted = await publisher.deleteImage(path);
-			}
-
+		for (const path of notesToDelete) {
+			processingPaths = [...processingPaths, path];
+			await publisher.deleteNote(path);
 			processingPaths = processingPaths.filter((p) => p !== path);
-
-			if (isDeleted) {
-				publishedPaths = [...publishedPaths, path];
-			} else {
-				failedPublish = [...failedPublish, path];
-			}
+			publishedPaths = [...publishedPaths, path];
 		}
+
+		for (const path of imagesToDelete) {
+			processingPaths = [...processingPaths, path];
+			await publisher.deleteImage(path);
+			processingPaths = processingPaths.filter((p) => p !== path);
+			publishedPaths = [...publishedPaths, path];
+		}
+		publishedPaths = [...publishedPaths, ...processingPaths];
+		processingPaths = [];
 	};
 
 	const emptyNode: TreeNode = {
