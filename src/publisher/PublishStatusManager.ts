@@ -24,7 +24,8 @@ export default class PublishStatusManager implements IPublishStatusManager {
 		remoteNoteHashes: { [key: string]: string },
 		marked: string[],
 	): Array<{ path: string; sha: string }> {
-		const isJsFile = (key: string) => key.endsWith(".js");
+		const isJsFile = (key: string) =>
+			key.endsWith(".js") || key.endsWith(".json");
 
 		const isMarkedForPublish = (key: string) =>
 			marked.find((f) => f === key);
