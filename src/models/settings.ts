@@ -84,7 +84,10 @@ export default interface DigitalGardenSettings {
 		canvasResetHint: string;
 	};
 
+	navigationOrder?: Record<string, string[]>;
+
 	ENABLE_DEVELOPER_TOOLS?: boolean;
 	devPluginPath?: string;
 	logLevel?: ILogLevel;
+	localExportPath?: string;
 }

@@ -20,7 +20,12 @@ import Logger from "js-logger";
 import { PublishFile } from "./src/publishFile/PublishFile";
 import { FRONTMATTER_KEYS } from "./src/publishFile/FileMetaDataManager";
 import { PublishPlatform } from "src/models/PublishPlatform";
+import { hasUpdates } from "./src/repositoryConnection/TemplateManager";
 import { LimitReachedError } from "src/forestry/LimitReachedError";
+import { LocalExporter } from "./src/localExport/LocalExporter";
+import { NavigationOrderModal } from "src/views/NavigationOrder/NavigationOrderModal";
+import { RepositoryConnection } from "src/repositoryConnection/RepositoryConnection";
+import PublishPlatformConnectionFactory from "src/repositoryConnection/PublishPlatformConnectionFactory";
 
 // Process environment variables are provided through esbuild's define feature
 // See esbuild.config.mjs
@@ -112,6 +117,7 @@ const DEFAULT_SETTINGS: DigitalGardenSettings = {
 	},
 
 	logLevel: undefined,
+	localExportPath: "",
 };
 
 Logger.useDefaults({
@@ -152,6 +158,34 @@ export default class DigitalGarden extends Plugin {
 				this.openPublishModal();
 			},
 		);
+
+		this.checkForTemplateUpdates();
+	}
+
+	private async checkForTemplateUpdates() {
+		if (this.settings.publishPlatform !== PublishPlatform.SelfHosted) {
+			return;
+		}
+
+		try {
+			const siteManager = new DigitalGardenSiteManager(
+				this.app.metadataCache,
+				this.settings,
+			);
+
+			const updater = await (
+				await siteManager.getTemplateUpdater()
+			).checkForUpdates();
+
+			if (hasUpdates(updater)) {
+				new Notice(
+					`Digital Garden: A new site template version (${updater.newestTemplateVersion}) is available. Update in the plugin settings.`,
+					10000,
+				);
+			}
+		} catch {
+			// Silently ignore update check failures on startup
+		}
 	}
 
 	onunload() {}
@@ -402,6 +436,56 @@ export default class DigitalGarden extends Plugin {
 				await this.setAsHomePage();
 			},
 		});
+
+		this.addCommand({
+			id: "dg-reorder-navigation",
+			name: "Reorder navigation",
+			callback: async () => {
+				this.openNavigationOrderModal();
+			},
+		});
+
+		if (Platform.isDesktop) {
+			this.addCommand({
+				id: "export-garden-to-local-folder",
+				name: "Export Garden to Local Folder",
+				callback: async () => {
+					try {
+						new Notice("Exporting garden to local folder...");
+						const { vault, metadataCache } = this.app;
+
+						const publisher = new Publisher(
+							vault,
+							metadataCache,
+							this.settings,
+						);
+
+						const exporter = new LocalExporter(
+							vault,
+							publisher,
+							this.settings,
+						);
+
+						const result = await exporter.export();
+
+						if (result.failed > 0) {
+							new Notice(
+								`Exported ${result.notes} notes and ${result.images} images (${result.failed} failed). Check console for details.`,
+								8000,
+							);
+						} else {
+							new Notice(
+								`Exported ${result.notes} notes and ${result.images} images to ${this.settings.localExportPath}`,
+								8000,
+							);
+						}
+					} catch (e) {
+						// Validation errors already show Notices
+						Logger.error("Local export failed", e);
+					}
+				},
+			});
+		}
 	}
 
 	private getActiveFile(workspace: Workspace) {
@@ -626,6 +710,30 @@ export default class DigitalGarden extends Plugin {
 				10000,
 			);
 		}
+	}
+
+	async openNavigationOrderModal() {
+		const connection =
+			await PublishPlatformConnectionFactory.createPublishPlatformConnection(
+				this.settings,
+			);
+		const repositoryConnection = new RepositoryConnection(connection);
+
+		const publisher = new Publisher(
+			this.app.vault,
+			this.app.metadataCache,
+			this.settings,
+		);
+
+		const modal = new NavigationOrderModal(
+			this.app,
+			repositoryConnection,
+			publisher,
+			this.settings,
+			() => this.saveSettings(),
+		);
+
+		modal.open();
 	}
 
 	openPublishModal() {

@@ -35,6 +35,8 @@ import Logger from "js-logger";
 import ForestrySettings from "./ForestrySettings.svelte";
 import { PublishPlatform } from "src/models/PublishPlatform";
 import PublishPlatformConnectionFactory from "../../repositoryConnection/PublishPlatformConnectionFactory";
+import { NavigationOrderModal } from "../NavigationOrder/NavigationOrderModal";
+import { RepositoryConnection } from "../../repositoryConnection/RepositoryConnection";
 
 interface IObsidianTheme {
 	name: string;
@@ -86,6 +88,8 @@ export default class SettingView {
 		}
 	}
 
+	private updateSectionAnchor: HTMLElement | null = null;
+
 	async initialize(prModal: Modal) {
 		this.prModal = prModal;
 		this.settingsRootElement.empty();
@@ -98,13 +102,16 @@ export default class SettingView {
 			attr: { style: "margin-bottom: 10px;" },
 		});
 
+		// Placeholder for the template update section (rendered async, inserted at top)
+		this.updateSectionAnchor = this.settingsRootElement.createDiv();
+
 		linkDiv.createEl("span", {
 			text: "Remember to read the setup guide if you haven't already. It can be found ",
 		});
 
 		linkDiv.createEl("a", {
 			text: "here.",
-			href: "https://dg-docs.ole.dev/getting-started/01-getting-started/",
+			href: "https://docs.forestry.md/getting-started/01-getting-started/",
 		});
 
 		new Setting(this.settingsRootElement)
@@ -170,6 +177,19 @@ export default class SettingView {
 			.prepend(this.getIcon("languages"));
 		this.initializeUIStringsSettings();
 
+		new Setting(this.settingsRootElement)
+			.setName("Navigation Order")
+			.setDesc(
+				"Customize the order of files and folders in your site's navigation.",
+			)
+			.addButton((cb) => {
+				cb.setButtonText("Reorder Navigation");
+
+				cb.onClick(async () => {
+					await this.openNavigationOrderModal();
+				});
+			});
+
 		this.settingsRootElement
 			.createEl("h3", { text: "Advanced" })
 			.prepend(this.getIcon("cog"));
@@ -203,6 +223,25 @@ export default class SettingView {
 						Logger.setLevel(value ? Logger.DEBUG : Logger.WARN);
 						await this.saveSettings();
 					});
+			});
+
+		this.settingsRootElement
+			.createEl("h3", { text: "Local Export" })
+			.prepend(this.getIcon("folder-output"));
+
+		new Setting(this.settingsRootElement)
+			.setName("Local garden folder path")
+			.setDesc(
+				"Absolute path to your local digital garden folder. Used by the 'Export Garden to Local Folder' command.",
+			)
+			.addText((text) => {
+				text.setPlaceholder("/path/to/your/digitalgarden")
+					.setValue(this.settings.localExportPath ?? "")
+					.onChange(async (value) => {
+						this.settings.localExportPath = value;
+						await this.saveSettings();
+					});
+				text.inputEl.style.width = "300px";
 			});
 
 		prModal.titleEl.createEl("h1", "Site template settings");
@@ -245,7 +284,7 @@ export default class SettingView {
 
 		linkDiv.createEl("a", {
 			text: "here.",
-			href: "https://dg-docs.ole.dev/getting-started/03-note-settings/",
+			href: "https://docs.forestry.md/getting-started/03-note-settings/",
 		});
 
 		new Setting(this.settingsRootElement)
@@ -1665,7 +1704,7 @@ export default class SettingView {
 			.createEl("div", { cls: "dg-docs-link" })
 			.createEl("a", {
 				text: "Documentation on note icons",
-				href: "https://dg-docs.ole.dev/advanced/note-specific-settings/#note-icons",
+				href: "https://docs.forestry.md/advanced/note-specific-settings/#note-icons",
 			});
 
 		new Setting(noteIconsSection)
@@ -2073,6 +2112,30 @@ export default class SettingView {
 			);
 	}
 
+	private async openNavigationOrderModal() {
+		const connection =
+			await PublishPlatformConnectionFactory.createPublishPlatformConnection(
+				this.settings,
+			);
+		const repositoryConnection = new RepositoryConnection(connection);
+
+		const publisher = new Publisher(
+			this.app.vault,
+			this.app.metadataCache,
+			this.settings,
+		);
+
+		const modal = new NavigationOrderModal(
+			this.app,
+			repositoryConnection,
+			publisher,
+			this.settings,
+			this.saveSettings,
+		);
+
+		modal.open();
+	}
+
 	private openPathRewriteRulesModal() {
 		const publisher = new Publisher(
 			this.app.vault,
@@ -2180,28 +2243,67 @@ export default class SettingView {
 		) => Promise<void>,
 		siteManager: DigitalGardenSiteManager,
 	) {
-		this.settingsRootElement
-			.createEl("h3", { text: "Update site" })
+		const target = this.updateSectionAnchor ?? this.settingsRootElement;
+
+		target
+			.createEl("h3", { text: "Update site template" })
 			.prepend(getIcon("sync") ?? "");
+
+		// Show loading indicator while checking for updates
+		const loadingContainer = target.createDiv({
+			cls: "dg-update-loading",
+		});
+
+		new Setting(loadingContainer)
+			.setName("Site Template")
+			.setDesc("Checking for updates...")
+			.addButton((button) => {
+				button.setButtonText("Checking...");
+				button.setDisabled(true);
+			});
 
 		Logger.time("checkForUpdate");
 
-		const updater = await (
-			await siteManager.getTemplateUpdater()
-		).checkForUpdates();
+		let updater;
+
+		try {
+			updater = await (
+				await siteManager.getTemplateUpdater()
+			).checkForUpdates();
+		} catch (error) {
+			Logger.warn("Failed to check for template updates", error);
+			loadingContainer.empty();
+
+			new Setting(loadingContainer)
+				.setName("Site Template")
+				.setDesc(
+					"Unable to check for updates. Please check your connection and credentials.",
+				)
+				.addButton((button) => {
+					button.setButtonText("Check failed");
+					button.setDisabled(true);
+				});
+
+			return;
+		}
+
 		Logger.timeEnd("checkForUpdate");
+
+		// Replace loading indicator with actual state
+		loadingContainer.empty();
 
 		const updateAvailable = hasUpdates(updater);
 
-		new Setting(this.settingsRootElement)
+		new Setting(loadingContainer)
 			.setName("Site Template")
 			.setDesc(
-				"Manage updates to the base template. You should try updating the template when you update the plugin to make sure your garden support all features.",
+				updateAvailable
+					? "Manage updates to the base template. You should try updating the template when you update the plugin to make sure your garden support all features."
+					: `Your site template is up to date! (${
+							updater.newestTemplateVersion ?? "latest"
+					  })`,
 			)
 			.addButton(async (button) => {
-				button.setButtonText(`Checking...`);
-				Logger.time("checkForUpdate");
-
 				if (updateAvailable) {
 					button.setButtonText(
 						`Update to ${updater.newestTemplateVersion}`,
